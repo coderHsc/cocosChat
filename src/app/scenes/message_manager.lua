@@ -6,6 +6,7 @@ local bit  = require "bit"
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
 
+
 MessageManager = class("MessageManager")
 
 self = MessageManager
@@ -15,7 +16,7 @@ function MessageManager:init()
 
 end
 
-function MessageManager:extract( n, i, j )
+local function extract( n, i, j )
     local rNum = bit.rshift(n,i)
     local num = 1
     local sub = bit.band(rNum,bit.lshift(num,j)-1)
@@ -24,12 +25,11 @@ function MessageManager:extract( n, i, j )
 end
 
 
-function MessageManager:pack_package(msg)
+function MessageManager:pack_package(key,value,session)
 
-	local str = request("get",{ what = "hello" }, 1)
-
+	local str = request("get",{ what = "hello" },session)
 	local size = #str
-    return string.char(self:extract(size,8,8)) .. string.char(self:extract(size,0,8)) .. str
+    return string.char(extract(size,8,8)) .. string.char(extract(size,0,8)) .. str
 end
 
 function MessageManager:unpack_package(text)
@@ -44,9 +44,11 @@ function MessageManager:unpack_package(text)
 
     return text:sub(3,2+s), text:sub(3+s)
 end
+function MessageManager:print_package(text)
+    self:print_package_(host:dispatch(text))
+end
 
-function MessageManager:print_package(text, ...)
-	t = host:dispatch(text)
+function MessageManager:print_package_(t, ...)
     if t == "REQUEST" then
         self:print_request(...)
     else
